@@ -56,22 +56,61 @@ td.w{color:var(--ball);font-weight:800}
 .pos{color:var(--green);font-weight:700}
 .reset{display:block;margin:16px auto 0;background:none;border:0;color:var(--mute);font:inherit;text-decoration:underline;cursor:pointer;padding:10px}
 .reset.arm{color:var(--bad);font-weight:700}
+.bar{display:flex;align-items:center;justify-content:space-between}
+.rulesBtn{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--green);cursor:pointer;display:grid;place-items:center;padding:0}
+.rulesBtn svg{width:24px;height:24px}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-end;justify-content:center;z-index:50}
+.ov.open{display:flex}
+.sheet{background:var(--bg);width:100%;max-width:520px;max-height:88%;overflow-y:auto;border-radius:20px 20px 0 0;padding:16px 16px calc(24px + env(safe-area-inset-bottom,0px))}
+.sheet .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.sheet h2{font-size:22px;font-weight:800;margin:0}
+.sheet h3{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);margin:18px 0 8px}
+.sheet .x{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:22px;cursor:pointer}
+.sheet ol{margin:0;padding-left:0;list-style:none;counter-reset:s}
+.sheet li{counter-increment:s;display:flex;gap:10px;align-items:flex-start;font-size:18px;margin-bottom:10px}
+.sheet li::before{content:counter(s);flex:none;width:28px;height:28px;border-radius:50%;background:var(--green);color:var(--onGreen);font-weight:800;font-size:15px;display:grid;place-items:center;margin-top:1px}
+.pt{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;font-size:17px}
+.pt b{flex:none;min-width:54px;text-align:center;font-size:22px;font-weight:800;color:var(--green)}
+.pt b.z{color:var(--mute)}
+.late{display:none}
+.late.on{display:block;background:var(--ball);color:#14281d;border-radius:10px;padding:8px 10px;margin:6px 0 10px;font-weight:700;font-size:15px}
+.note{font-size:16px;color:var(--mute);margin:6px 0 0}
 </style>
 </head>
 <body>
 <main>
-<h1>Wolf scorer</h1>
+<div class="bar"><h1>Wolf scorer</h1><button class="rulesBtn" id="rulesBtn" aria-label="How to play and scoring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 5.5C4.5 4 8 4 12 6c4-2 7.5-2 10-.5V19c-2.5-1.500-6-1.500-10 .5-4-2-7.500-2-10-.5z"/><path d="M12 6v13.500"/></svg></button></div>
 <div class="totals" id="totals"></div>
 <div class="nav">
 <button id="prev" aria-label="Previous hole">&lsaquo;</button>
 <div class="hole" id="hole"></div>
 <button id="next" aria-label="Next hole">&rsaquo;</button>
 </div>
-<div class="panel"><h2 id="wolfTitle"></h2><p>Pick a partner after seeing their tee shot, or go solo.</p><div class="opts" id="partners"></div></div>
+<div class="panel"><h2 id="wolfTitle"></h2><div class="late" id="late"></div><p>Pick a partner after seeing their tee shot, or go solo.</p><div class="opts" id="partners"></div></div>
 <div class="panel"><h2>Who won the hole?</h2><p id="resHint">Best ball on each team.</p><div class="opts three" id="results"></div><div class="preview" id="preview"></div></div>
 <div class="panel"><h2>Scorecard</h2><div class="tablewrap"><table id="card"></table></div></div>
 <button class="reset" id="reset">Start a new round</button>
 </main>
+<div class="ov" id="ov"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="rt">
+<div class="top"><h2 id="rt">How Wolf works</h2><button class="x" id="rx" aria-label="Close rules">&times;</button></div>
+<h3>Each hole</h3>
+<ol>
+<li>The wolf tees off <b>last</b>. Wolf rotates in tee order.</li>
+<li>After each player’s tee shot, the wolf can <b>pick</b> that player or <b>pass</b>. Once you pass, you can’t go back.</li>
+<li>Pass on all three and you’re the <b>lone wolf</b>.</li>
+<li>Teams play <b>best ball</b>. The lower score on a team counts.</li>
+</ol>
+<h3>Points</h3>
+<div class="pt"><b>2</b><span>Wolf and partner win: <b style="display:inline;min-width:0;font-size:inherit">2 each</b> to the wolf team</span></div>
+<div class="pt"><b>2</b><span>Wolf and partner lose: <b style="display:inline;min-width:0;font-size:inherit">2 each</b> to the other two</span></div>
+<div class="pt"><b>4</b><span>Lone wolf wins: <b style="display:inline;min-width:0;font-size:inherit">4</b> to the wolf</span></div>
+<div class="pt"><b>2</b><span>Lone wolf loses: <b style="display:inline;min-width:0;font-size:inherit">2 each</b> to the other three</span></div>
+<div class="pt"><b class="z">0</b><span>Tie: no points</span></div>
+<h3>Wolf order</h3>
+<p class="note">Holes 1 to 16 rotate in tee order: player 1, 2, 3, 4, then repeat.</p><p class="note"><b>Holes 17 and 18: the player in last place is the wolf.</b> If tied for last, normal rotation decides among the tied players.</p>
+<h3>Using this app</h3>
+<p class="note">Pick the partner or Lone wolf, then tap who won. Tap a hole number in the scorecard to fix a past hole.</p>
+</div></div>
 <script>
 if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}
 (function(){
@@ -79,11 +118,17 @@ var KEY="wolf-scorer-v1";
 var blank=function(){return{names:["Player 1","Player 2","Player 3","Player 4"],holes:Array.from({length:18},function(){return{p:null,r:null}}),cur:0}};
 var S=blank();
 try{var raw=localStorage.getItem(KEY);if(raw){var j=JSON.parse(raw);if(j&&j.names&&j.holes&&j.holes.length===18)S=j}}catch(e){}
-function wolfOf(i){return i>=16?3:i%4}
+function tot(n){var t=[0,0,0,0];for(var j=0;j<n;j++){var p=pts(j);for(var k=0;k<4;k++)t[k]+=p[k]}return t}
+function wolfInfo(i){
+ if(i<16)return{w:i%4,late:false};
+ var t=tot(i),m=Math.min.apply(null,t),tied=[0,1,2,3].filter(function(k){return t[k]===m});
+ var nat=i%4;return{w:tied.indexOf(nat)>-1?nat:tied[0],late:true,tied:tied,min:m};
+}
+function wolfOf(i){return wolfInfo(i).w}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function pts(i){
  var h=S.holes[i],w=wolfOf(i),out=[0,0,0,0];
- if(h.p===null||h.r===null||h.r==="tie")return out;
+ if(h.p===null||h.r===null||h.r==="tie"||h.p===w)return out;
  var team=h.p==="lone"?[w]:[w,h.p];
  var others=[0,1,2,3].filter(function(x){return team.indexOf(x)<0});
  var wolfWon=h.r==="wolf";
@@ -114,6 +159,14 @@ function nm(k){return S.names[k]||("Player "+(k+1))}
 function renderLow(){
  var w=wolfOf(S.cur),h=S.holes[S.cur];
  $("wolfTitle").textContent=nm(w)+" is the wolf";
+ var inf=wolfInfo(S.cur),lt=$("late");
+ if(inf.late){
+  var names=inf.tied.map(nm).join(" and ");
+  lt.className="late on";
+  lt.textContent=inf.tied.length>1
+   ?"Holes 17 and 18: last place is wolf. "+names+" are tied for last on "+inf.min+" pts, so normal rotation decides."
+   :"Holes 17 and 18: last place is wolf. "+nm(w)+" is last on "+inf.min+" pts.";
+ }else{lt.className="late";lt.textContent=""}
  var po=$("partners");po.innerHTML="";
  [0,1,2,3].filter(function(x){return x!==w}).forEach(function(x){
   po.appendChild(btn(nm(x),h.p===x,"",function(){h.p=x;save();render()}));
@@ -149,6 +202,13 @@ rb.addEventListener("click",function(){
  if(!armed){armed=true;rb.className="reset arm";rb.textContent="Tap again to clear all scores";tm=setTimeout(function(){armed=false;rb.className="reset";rb.textContent="Start a new round"},4000);return}
  clearTimeout(tm);armed=false;var names=S.names;S=blank();S.names=names;save();rb.className="reset";rb.textContent="Start a new round";render();
 });
+var ov=$("ov");
+function openR(){ov.className="ov open";$("rx").focus()}
+function closeR(){ov.className="ov";$("rulesBtn").focus()}
+$("rulesBtn").addEventListener("click",openR);
+$("rx").addEventListener("click",closeR);
+ov.addEventListener("click",function(e){if(e.target===ov)closeR()});
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&ov.className.indexOf("open")>-1)closeR()});
 render();
 })();
 </script>
