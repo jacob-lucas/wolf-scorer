@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wolf Scorer</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Wolf">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1f5d3a">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#e9efe4;--card:#f8faf5;--ink:#14281d;--mute:#5d7064;--green:#1f5d3a;--onGreen:#f4f8ee;--ball:#e8c547;--line:#cdd8c8;--bad:#a63d2f}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#0f1a14;--card:#17261d;--ink:#e6efe3;--mute:#8ba091;--green:#5fbf8a;--onGreen:#0f1a14;--line:#27392d;--bad:#e5897b}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#0f1a14;--card:#17261d;--ink:#e6efe3;--mute:#8ba091;--green:#5fbf8a;--onGreen:#0f1a14;--line:#27392d;--bad:#e5897b}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:16px;line-height:1.4}
+main{max-width:520px;margin:0 auto;padding:14px 14px 40px}
+h1{font-size:22px;font-weight:800;margin:4px 0 12px;letter-spacing:-.01em}
+.totals{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 6px;text-align:center;position:relative}
+.tile.wolf{border-color:var(--ball);box-shadow:0 0 0 2px var(--ball)}
+.tile input{width:100%;border:0;background:transparent;color:var(--ink);font:inherit;font-weight:700;font-size:14px;text-align:center;padding:2px 0;min-width:0}
+.tile input:focus-visible,button:focus-visible{outline:3px solid var(--ball);outline-offset:2px}
+.tile .pts{font-size:32px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}
+.tile .lead{color:var(--green)}
+.nav{display:flex;align-items:center;justify-content:space-between;margin:18px 0 10px}
+.nav button{width:48px;height:48px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:20px;font-weight:700;cursor:pointer}
+.nav button:disabled{opacity:.35;cursor:default}
+.hole{text-align:center}
+.hole b{display:block;font-size:44px;font-weight:800;line-height:1}
+.hole span{color:var(--mute);font-size:14px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.panel h2{margin:0 0 4px;font-size:16px;font-weight:700}
+.panel p{margin:0 0 10px;color:var(--mute);font-size:14px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.opts.three{grid-template-columns:1fr 1fr 1fr}
+.opt{min-height:50px;border-radius:10px;border:2px solid var(--line);background:transparent;color:var(--ink);font:inherit;font-weight:700;font-size:15px;cursor:pointer;padding:6px}
+.opt.on{background:var(--green);border-color:var(--green);color:var(--onGreen)}
+.opt.lone.on{background:var(--ball);border-color:var(--ball);color:#14281d}
+.preview{display:flex;justify-content:space-between;gap:6px;margin-top:4px}
+.preview div{flex:1;text-align:center;border-radius:10px;background:var(--bg);padding:6px 2px;font-size:13px;color:var(--mute)}
+.preview strong{display:block;font-size:20px;color:var(--ink)}
+.preview .win strong{color:var(--green)}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+th,td{padding:6px 4px;text-align:center;border-bottom:1px solid var(--line)}
+th{font-weight:700;color:var(--mute)}
+tr.cur td{background:var(--bg)}
+td.h{font-weight:700;cursor:pointer}
+td.w{color:var(--ball);font-weight:800}
+.pos{color:var(--green);font-weight:700}
+.reset{display:block;margin:16px auto 0;background:none;border:0;color:var(--mute);font:inherit;text-decoration:underline;cursor:pointer;padding:10px}
+.reset.arm{color:var(--bad);font-weight:700}
+</style>
+</head>
+<body>
+<main>
+<h1>Wolf scorer</h1>
+<div class="totals" id="totals"></div>
+<div class="nav">
+<button id="prev" aria-label="Previous hole">&lsaquo;</button>
+<div class="hole" id="hole"></div>
+<button id="next" aria-label="Next hole">&rsaquo;</button>
+</div>
+<div class="panel"><h2 id="wolfTitle"></h2><p>Pick a partner after seeing their tee shot, or go solo.</p><div class="opts" id="partners"></div></div>
+<div class="panel"><h2>Who won the hole?</h2><p id="resHint">Best ball on each team.</p><div class="opts three" id="results"></div><div class="preview" id="preview"></div></div>
+<div class="panel"><h2>Scorecard</h2><div class="tablewrap"><table id="card"></table></div></div>
+<button class="reset" id="reset">Start a new round</button>
+</main>
+<script>
+if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}
+(function(){
+var KEY="wolf-scorer-v1";
+var blank=function(){return{names:["Player 1","Player 2","Player 3","Player 4"],holes:Array.from({length:18},function(){return{p:null,r:null}}),cur:0}};
+var S=blank();
+try{var raw=localStorage.getItem(KEY);if(raw){var j=JSON.parse(raw);if(j&&j.names&&j.holes&&j.holes.length===18)S=j}}catch(e){}
+function wolfOf(i){return i>=16?3:i%4}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function pts(i){
+ var h=S.holes[i],w=wolfOf(i),out=[0,0,0,0];
+ if(h.p===null||h.r===null||h.r==="tie")return out;
+ var team=h.p==="lone"?[w]:[w,h.p];
+ var others=[0,1,2,3].filter(function(x){return team.indexOf(x)<0});
+ var wolfWon=h.r==="wolf";
+ if(h.p==="lone"){
+  if(wolfWon)out[w]=4;else others.forEach(function(x){out[x]=2});
+ }else{
+  (wolfWon?team:others).forEach(function(x){out[x]=2});
+ }
+ return out;
+}
+function totals(){var t=[0,0,0,0];for(var i=0;i<18;i++){var p=pts(i);for(var k=0;k<4;k++)t[k]+=p[k]}return t}
+var $=function(id){return document.getElementById(id)};
+function render(){
+ var t=totals(),max=Math.max.apply(null,t),w=wolfOf(S.cur),h=S.holes[S.cur];
+ var tl=$("totals");tl.innerHTML="";
+ S.names.forEach(function(n,k){
+  var d=document.createElement("div");d.className="tile"+(k===w?" wolf":"");
+  var inp=document.createElement("input");inp.value=n;inp.setAttribute("aria-label","Player "+(k+1)+" name");inp.maxLength=12;
+  inp.addEventListener("input",function(){S.names[k]=inp.value;save();renderLow()});
+  var p=document.createElement("div");p.className="pts"+(t[k]===max&&max>0?" lead":"");p.textContent=t[k];
+  d.appendChild(inp);d.appendChild(p);tl.appendChild(d);
+ });
+ $("hole").innerHTML="<b>Hole "+(S.cur+1)+"</b><span>of 18</span>";
+ $("prev").disabled=S.cur===0;$("next").disabled=S.cur===17;
+ renderLow();
+}
+function nm(k){return S.names[k]||("Player "+(k+1))}
+function renderLow(){
+ var w=wolfOf(S.cur),h=S.holes[S.cur];
+ $("wolfTitle").textContent=nm(w)+" is the wolf";
+ var po=$("partners");po.innerHTML="";
+ [0,1,2,3].filter(function(x){return x!==w}).forEach(function(x){
+  po.appendChild(btn(nm(x),h.p===x,"",function(){h.p=x;save();render()}));
+ });
+ po.appendChild(btn("Lone wolf",h.p==="lone","lone",function(){h.p="lone";save();render()}));
+ var lone=h.p==="lone";
+ var rs=$("results");rs.innerHTML="";
+ rs.appendChild(btn(lone?"Wolf won":"Wolf team",h.r==="wolf","",function(){h.r="wolf";save();render()}));
+ rs.appendChild(btn(lone?"Wolf lost":"Other team",h.r==="other","",function(){h.r="other";save();render()}));
+ rs.appendChild(btn("Tie",h.r==="tie","",function(){h.r="tie";save();render()}));
+ var hp=pts(S.cur),pv=$("preview");pv.innerHTML="";
+ for(var k=0;k<4;k++){var d=document.createElement("div");if(hp[k]>0)d.className="win";d.innerHTML="<strong>+"+hp[k]+"</strong>";d.appendChild(document.createTextNode(nm(k)));pv.appendChild(d)}
+ var c=$("card");var html="<tr><th>Hole</th>";
+ for(var k2=0;k2<4;k2++)html+="<th>"+esc(nm(k2))+"</th>";html+="</tr>";
+ for(var i=0;i<18;i++){
+  var p=pts(i),done=S.holes[i].p!==null&&S.holes[i].r!==null;
+  html+="<tr class=\""+(i===S.cur?"cur":"")+"\"><td class=\"h\" data-i=\""+i+"\">"+(i+1)+"</td>";
+  for(var q=0;q<4;q++){html+="<td class=\""+(wolfOf(i)===q?"w":"")+"\">"+(done?(p[q]?"<span class=pos>"+p[q]+"</span>":"0"):"")+"</td>"}
+  html+="</tr>";
+ }
+ var t=totals();html+="<tr><th>Total</th>";t.forEach(function(v){html+="<th style=\"color:var(--ink)\">"+v+"</th>"});html+="</tr>";
+ c.innerHTML=html;
+ Array.prototype.forEach.call(c.querySelectorAll("td.h"),function(td){td.addEventListener("click",function(){S.cur=+td.getAttribute("data-i");save();render()})});
+ var tiles=document.querySelectorAll(".tile");
+ Array.prototype.forEach.call(tiles,function(el,k){el.className="tile"+(k===w?" wolf":"");var pe=el.querySelector(".pts");pe.textContent=t[k];pe.className="pts"+(t[k]===Math.max.apply(null,t)&&t[k]>0?" lead":"")});
+}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]})}
+function btn(label,on,extra,fn){var b=document.createElement("button");b.className="opt "+extra+(on?" on":"");b.textContent=label;b.setAttribute("aria-pressed",on?"true":"false");b.addEventListener("click",fn);return b}
+$("prev").addEventListener("click",function(){if(S.cur>0){S.cur--;save();render()}});
+$("next").addEventListener("click",function(){if(S.cur<17){S.cur++;save();render()}});
+var rb=$("reset"),armed=false,tm;
+rb.addEventListener("click",function(){
+ if(!armed){armed=true;rb.className="reset arm";rb.textContent="Tap again to clear all scores";tm=setTimeout(function(){armed=false;rb.className="reset";rb.textContent="Start a new round"},4000);return}
+ clearTimeout(tm);armed=false;var names=S.names;S=blank();S.names=names;save();rb.className="reset";rb.textContent="Start a new round";render();
+});
+render();
+})();
+</script>
+</body>
+</html>
